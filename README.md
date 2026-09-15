@@ -22,7 +22,8 @@ The extension registers:
 
 - a configurable terminal shortcut (`Ctrl+Alt+Z` by default) to start and stop recording;
 - a `transcribe_file` tool that the agent can use to transcribe local audio or video files;
-- `/transcribe` for preferred languages, model, transcription language, microphone, and shortcut settings.
+- `/transcribe` for preferred languages, model, transcription language, microphone, and shortcut settings;
+- `/skill:update-whisper-input-prompt` to rebuild the global and cwd Whisper spelling-bias snippets from past Pi sessions (opens both files for review).
 
 To develop or run it from a checkout:
 
