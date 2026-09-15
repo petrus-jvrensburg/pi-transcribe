@@ -1,7 +1,7 @@
 ---
 name: update-whisper-input-prompt
 description: >-
-  Rewrite the global and current-directory Whisper initial_prompt snippets from historical Pi session user messages. Use when asked to update the Whisper input prompt, refresh ASR vocab, rebuild whisper-prompt.txt, or run update-whisper-input-prompt.
+  Rewrite the global and current-directory Whisper initial_prompt snippets from historical Pi session user messages. Use when asked to update the Whisper input prompt, refresh ASR vocab, rebuild whisper-prompt.txt / prompt-snippet.txt, or run update-whisper-input-prompt.
 ---
 
 # Update Whisper input prompt
@@ -11,9 +11,9 @@ Rebuild two **static prose snippets** Whisper can use as `initialPrompt` (soft s
 | File | Role |
 |------|------|
 | `~/.pi/agent/whisper-prompt.txt` | Global — terms used across many working directories |
-| `~/.pi/agent/whisper-prompts/<encoded-cwd>.txt` | This cwd only |
+| `<cwd>/.pi/pi-transcribe/prompt-snippet.txt` | This cwd only |
 
-Respect `PI_CODING_AGENT_DIR` if set. Do not write these into the git repo. Do not patch pi-transcribe. Do not scrape the open editor or repo files for identifiers.
+Respect `PI_CODING_AGENT_DIR` if set for the global file. Write the cwd snippet into the working directory's `.pi`, not into the pi-transcribe package. Do not patch pi-transcribe. Do not scrape the open editor or repo files for identifiers.
 
 The same flow covers **first run** (both missing), **new directory** (global exists, local missing), and **later runs** (both exist). Detect that from the prepare output; do not ask which mode it is.
 

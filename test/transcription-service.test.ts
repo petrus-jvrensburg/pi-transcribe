@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test, { describe, type TestContext } from "node:test";
 import type { TranscribeSettings } from "../src/settings.js";
 import { TranscriptionService } from "../src/transcription-service.js";
@@ -9,7 +9,7 @@ import type {
   DictationStream,
   TranscriptionOptions,
 } from "../src/transcription.js";
-import { encodeCwd } from "../src/whisper-prompt.js";
+import { cwdWhisperPromptPath } from "../src/whisper-prompt.js";
 import { deferred, nextTurn } from "./helpers.js";
 
 function settings(modelPath: string): TranscribeSettings {
@@ -508,12 +508,12 @@ async function withWhisperSnippets(
     await writeFile(join(directory, "whisper-prompt.txt"), snippets.global, "utf8");
   }
   if (snippets.cwd !== undefined) {
-    await mkdir(join(directory, "whisper-prompts"));
-    await writeFile(
-      join(directory, "whisper-prompts", `${encodeCwd(process.cwd())}.txt`),
-      snippets.cwd,
-      "utf8",
-    );
+    const localPath = cwdWhisperPromptPath(process.cwd());
+    await mkdir(dirname(localPath), { recursive: true });
+    await writeFile(localPath, snippets.cwd, "utf8");
+    t.after(async () => {
+      await rm(localPath, { force: true });
+    });
   }
 }
 

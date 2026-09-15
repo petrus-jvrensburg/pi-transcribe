@@ -2,10 +2,12 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-/** Match Pi sessions / the update-whisper-input-prompt skill. */
-export function encodeCwd(cwd: string): string {
-  const resolved = resolve(cwd);
-  return `--${resolved.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-")}--`;
+export const GLOBAL_WHISPER_PROMPT_FILE = "whisper-prompt.txt";
+export const CWD_WHISPER_PROMPT_FILE = "prompt-snippet.txt";
+
+/** `<cwd>/.pi/pi-transcribe/prompt-snippet.txt` */
+export function cwdWhisperPromptPath(cwd: string): string {
+  return join(resolve(cwd), ".pi", "pi-transcribe", CWD_WHISPER_PROMPT_FILE);
 }
 
 function readSnippet(path: string): string {
@@ -27,8 +29,8 @@ export function readWhisperInitialPrompt(
   const agentDir = options.agentDir ?? getAgentDir();
   const cwd = options.cwd ?? process.cwd();
   const combined = [
-    readSnippet(join(agentDir, "whisper-prompt.txt")),
-    readSnippet(join(agentDir, "whisper-prompts", `${encodeCwd(cwd)}.txt`)),
+    readSnippet(join(agentDir, GLOBAL_WHISPER_PROMPT_FILE)),
+    readSnippet(cwdWhisperPromptPath(cwd)),
   ]
     .map((text) => text.trim())
     .filter(Boolean)

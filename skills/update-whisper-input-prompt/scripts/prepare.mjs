@@ -221,7 +221,7 @@ function promptPaths(cwd) {
     dir,
     encoded,
     globalPath: join(dir, "whisper-prompt.txt"),
-    localPath: join(dir, "whisper-prompts", `${encoded}.txt`),
+    localPath: join(cwd, ".pi", "pi-transcribe", "prompt-snippet.txt"),
     sessions: sessionRoot(dir),
     localSessionDir: join(sessionRoot(dir), encoded),
   };
