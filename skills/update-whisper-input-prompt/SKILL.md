@@ -66,9 +66,33 @@ Example shape:
 In this project we often talk about Elixir, Erlang's gen_statem, and the Unix design philosophy.
 ```
 
-## 4. Write, then open for review
+## 4. Write, count, trim, then open for review
 
-Write both files with the `write` tool (create parent dirs if needed). Then:
+Write both files with the `write` tool (create parent dirs if needed).
+
+Then count the **combined** prompt (global, then cwd, joined with a newline — the same string Whisper receives) against the configured transcribe.cpp model:
+
+```bash
+node scripts/count.mjs
+```
+
+If a path was passed to prepare, pass the same cwd:
+
+```bash
+node scripts/count.mjs --cwd /absolute/path
+```
+
+That loads the model from `pi-transcribe.json` and tokenizes with `TranscribeModel.tokenize` (CPU). Allow a long timeout; the GGUF may take a while. Do not estimate tokens. Do not skip this step.
+
+**Ceiling: 120 tokens** (`ok: yes` / exit 0 means `tokens <= 120`). If `ok: no`, rewrite the files shorter and count again. Repeat until `ok: yes`. Do not open the files until then.
+
+When trimming:
+
+- Drop lowest-priority **cwd** terms first, then glue words, then global terms.
+- Do not add new terms. Keep canonical spellings of whatever remains.
+- Stay spoken-looking; no `<|` or `|>`.
+
+Then:
 
 ```bash
 scripts/open.sh
@@ -80,7 +104,7 @@ That opens both files in the OS text editor (`open -t` on macOS) so the human ca
 scripts/open.sh /absolute/path
 ```
 
-After opening, stop. Summarize in one short note: global vs local term lists, first-run / new-cwd / update, and the two paths. Do not keep rewriting unless the user asks.
+After opening, stop. Summarize in one short note: global vs local term lists, first-run / new-cwd / update, the two paths, and the final token count. Do not keep rewriting unless the user asks.
 
 ## Hard rules
 
