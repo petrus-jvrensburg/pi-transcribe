@@ -35,11 +35,10 @@ node scripts/prepare.mjs --cwd /absolute/path
 
 Write a **new** paragraph to the global file. Always rewrite the whole file; do not splice lines.
 
-- Up to **20** terms that would be hard for Whisper (product names, people, hyphenated/package spellings, mixed case, digits).
+- Up to **20** terms that would be hard for Whisper (product names, people, hyphenated/package spellings, mixed case, digits). Use as many as the corpus supports; do not stop at a handful for style.
 - A term is global only if it shows up in **more than one cwd**, or is clearly about Pi itself across work (`pi`, `pi-transcribe`, `Qwen3-ASR`, `Grok`, `xAI`).
-- One or two spoken-looking sentences. The prompt must **contain the canonical spellings**. Do not write instructions like “spell these correctly.”
+- Spoken-looking prose that **contains the canonical spellings**. Do not write instructions like “spell these correctly.”
 - No `<|` or `|>` anywhere.
-- Keep it short (aim well under 400 characters).
 
 If a global file already exists, treat it as **spelling memory**, not a draft to preserve: carry over important terms and their exact capitalization when they are still warranted; drop stale ones; add new ones. Prefer an existing file’s spelling over a mangled session form (`Qwen3-ASR` not `QEN3ASR`).
 
@@ -53,10 +52,10 @@ We often work with Pi the coding agent, using models like Grok from xAI.
 
 Write a **new** paragraph to the local file for **this cwd**. Always rewrite the whole file.
 
-- Up to **20** terms from this directory’s sessions / cwd-only candidates.
+- Up to **20** terms from this directory’s sessions / cwd-only candidates. Use as many as the corpus supports; do not stop at a handful for style.
 - **Dedup against the global paragraph you just wrote** (not only the old global file). If the global snippet already introduces a name, do not repeat it.
 - Rank by “would Whisper mangle this?” and how often it appears here.
-- Same prose rules: spoken sentences, canonical spellings, no instructions, no `<|`, keep it short.
+- Same prose rules: spoken-looking prose, canonical spellings, no instructions, no `<|`.
 - Use the existing local file the same way as global: reference for terms and capitalization, then rewrite.
 
 If this cwd has no sessions yet, still write a local file. Use an empty file, or a single sentence with only terms you are confident belong to this directory from the prepare output. Do not invent a generic programming glossary.
