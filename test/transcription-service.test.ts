@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test, { describe, type TestContext } from "node:test";
 import type { TranscribeSettings } from "../src/settings.js";
 import { TranscriptionService } from "../src/transcription-service.js";
 import type {
   DictationStream,
   TranscriptionOptions,
 } from "../src/transcription.js";
+import { encodeCwd } from "../src/whisper-prompt.js";
 import { deferred, nextTurn } from "./helpers.js";
 
 function settings(modelPath: string): TranscribeSettings {
@@ -486,4 +490,82 @@ test("an empty recording never reaches stream finalize", async () => {
   await assert.rejects(reservation.submit(new Float32Array(0)), /No audio samples/);
   assert.deepEqual(events, ["stream:start", "stream:reset", "batch:0"]);
   await service.shutdown();
+});
+
+async function withWhisperSnippets(
+  t: TestContext,
+  snippets: { global?: string; cwd?: string },
+): Promise<void> {
+  const previous = process.env.PI_CODING_AGENT_DIR;
+  const directory = await mkdtemp(join(tmpdir(), "pi-transcribe-whisper-options-"));
+  process.env.PI_CODING_AGENT_DIR = directory;
+  t.after(async () => {
+    if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;
+    else process.env.PI_CODING_AGENT_DIR = previous;
+    await rm(directory, { recursive: true, force: true });
+  });
+  if (snippets.global !== undefined) {
+    await writeFile(join(directory, "whisper-prompt.txt"), snippets.global, "utf8");
+  }
+  if (snippets.cwd !== undefined) {
+    await mkdir(join(directory, "whisper-prompts"));
+    await writeFile(
+      join(directory, "whisper-prompts", `${encodeCwd(process.cwd())}.txt`),
+      snippets.cwd,
+      "utf8",
+    );
+  }
+}
+
+describe("Whisper initialPrompt wiring", { concurrency: 1 }, () => {
+  test("Whisper batch jobs receive the joined snippet as whisperInitialPrompt", async (t) => {
+    await withWhisperSnippets(t, {
+      global: "We often work with Pi.",
+      cwd: "In this project we talk about Elixir.",
+    });
+    let captured: TranscriptionOptions | undefined;
+    const service = createTestService({
+      async transcribe(_samples, options) {
+        captured = options;
+        return "ok";
+      },
+    });
+
+    await service.transcribeFile(settings("whisper-large-v3"), pcm(1));
+    assert.equal(
+      captured?.whisperInitialPrompt,
+      "We often work with Pi.\nIn this project we talk about Elixir.",
+    );
+    await service.shutdown();
+  });
+
+  test("non-Whisper families do not receive whisperInitialPrompt", async (t) => {
+    await withWhisperSnippets(t, { global: "We often work with Pi." });
+    let captured: TranscriptionOptions | undefined;
+    const service = createTestService({
+      async transcribe(_samples, options) {
+        captured = options;
+        return "ok";
+      },
+    });
+
+    await service.transcribeFile(settings("parakeet-tdt-0.6b-v3"), pcm(1));
+    assert.equal(captured?.whisperInitialPrompt, undefined);
+    await service.shutdown();
+  });
+
+  test("special tokens in Whisper snippets omit the prompt instead of failing", async (t) => {
+    await withWhisperSnippets(t, { global: "hello <|start|>" });
+    let captured: TranscriptionOptions | undefined;
+    const service = createTestService({
+      async transcribe(_samples, options) {
+        captured = options;
+        return "ok";
+      },
+    });
+
+    await service.transcribeFile(settings("whisper-large-v3"), pcm(1));
+    assert.equal(captured?.whisperInitialPrompt, undefined);
+    await service.shutdown();
+  });
 });

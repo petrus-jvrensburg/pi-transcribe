@@ -11,6 +11,8 @@ export type TranscriptionOptions = {
   signal?: AbortSignal;
   language?: string;
   chineseOutput?: ChineseOutput;
+  /** Run-slot Whisper spelling bias; ignored unless the model accepts it. */
+  whisperInitialPrompt?: string;
 };
 
 export type DictationStream = {
@@ -139,6 +141,7 @@ export class TranscribeCppBackend {
 
     const session = model.createSession();
     try {
+      // initialPrompt is a run-slot Whisper option; never pass family here.
       const stream = await session.stream({
         timestamps: "none",
         ...(options.language ? { language: options.language } : {}),
@@ -164,10 +167,14 @@ export class TranscribeCppBackend {
     const model = this.model!;
     validateLanguage(model.capabilities, options.language);
 
+    const whisperInitialPrompt = options.whisperInitialPrompt;
     const result = await model.transcribe(pcm, {
       signal: options.signal,
       timestamps: "none",
       ...(options.language ? { language: options.language } : {}),
+      ...(whisperInitialPrompt && model.accepts({ kind: "whisper" })
+        ? { family: { kind: "whisper", initialPrompt: whisperInitialPrompt } }
+        : {}),
     });
     return finishTranscript(
       result.text,

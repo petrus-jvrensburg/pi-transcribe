@@ -1,3 +1,4 @@
+import { getCatalogModel } from "./catalog.js";
 import { Deferred } from "./deferred.js";
 import type { TranscribeSettings } from "./settings.js";
 import type {
@@ -5,6 +6,7 @@ import type {
   TranscribeCppBackend,
   TranscriptionOptions,
 } from "./transcription.js";
+import { readWhisperInitialPrompt } from "./whisper-prompt.js";
 
 type TranscriptionJob = {
   settings: TranscribeSettings;
@@ -70,6 +72,10 @@ function transcriptionOptions(
   settings: TranscribeSettings,
   signal?: AbortSignal,
 ): TranscriptionOptions {
+  const whisperInitialPrompt =
+    getCatalogModel(settings.model.id)?.family === "whisper"
+      ? readWhisperInitialPrompt()
+      : undefined;
   return {
     signal,
     language:
@@ -77,6 +83,7 @@ function transcriptionOptions(
         ? undefined
         : settings.transcriptionLanguage,
     chineseOutput: settings.chineseOutput,
+    ...(whisperInitialPrompt ? { whisperInitialPrompt } : {}),
   };
 }
 
